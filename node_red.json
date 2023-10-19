@@ -1,0 +1,233 @@
+[
+  {
+    "id": "e5288298.2221f",
+    "type": "tab",
+    "label": "SolarEdge",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "e5b5d83e.fe45e8",
+    "type": "inject",
+    "z": "e5288298.2221f",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "20",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 350,
+    "y": 400,
+    "wires": [
+      [
+        "47f1e117.a379a8"
+      ]
+    ]
+  },
+  {
+    "id": "c0476e84.6827d",
+    "type": "http request",
+    "z": "e5288298.2221f",
+    "name": "",
+    "method": "GET",
+    "ret": "txt",
+    "paytoqs": "ignore",
+    "url": "https://monitoring.solaredge.com/solaredge-apigw/api/site/SITE_ID/currentPowerFlow.json",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "authType": "",
+    "x": 890,
+    "y": 400,
+    "wires": [
+      [
+        "e60c1f2a.4cf2c",
+        "6173e3ca.1e18cc"
+      ]
+    ]
+  },
+  {
+    "id": "47f1e117.a379a8",
+    "type": "change",
+    "z": "e5288298.2221f",
+    "name": "",
+    "rules": [
+      {
+        "t": "set",
+        "p": "cookies",
+        "pt": "msg",
+        "to": "{\"SolarEdge_Field_ID\":\"SITE_ID\",\"SPRING_SECURITY_REMEMBER_ME_COOKIE\":\"COOKIE\"}",
+        "tot": "json"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 630,
+    "y": 400,
+    "wires": [
+      [
+        "c0476e84.6827d"
+      ]
+    ]
+  },
+  {
+    "id": "1cc83430.ad9ff4",
+    "type": "debug",
+    "z": "e5288298.2221f",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1630,
+    "y": 400,
+    "wires": []
+  },
+  {
+    "id": "e60c1f2a.4cf2c",
+    "type": "json",
+    "z": "e5288298.2221f",
+    "name": "",
+    "property": "payload",
+    "action": "",
+    "pretty": false,
+    "x": 1110,
+    "y": 400,
+    "wires": [
+      [
+        "1cc83430.ad9ff4",
+        "fed5af4d.99fc28"
+      ]
+    ]
+  },
+  {
+    "id": "fed5af4d.99fc28",
+    "type": "function",
+    "z": "e5288298.2221f",
+    "name": "",
+    "func": "var grid = msg.payload.siteCurrentPowerFlow.GRID.currentPower * 1000\nvar load = msg.payload.siteCurrentPowerFlow.LOAD.currentPower * 1000\nvar pv = msg.payload.siteCurrentPowerFlow.PV.currentPower * 1000\nvar imp = 0\nvar exp = 0\nvar importExport = 0\n\nif (load > pv) {\n    imp = Math.abs(grid)\n    importExport = imp\n} else {\n    exp = Math.abs(grid)\n    importExport = exp * -1\n}\n\n\nmsg.payload = [\n    {\n        grid: grid,\n        load: load,\n        pv: pv,\n        import: imp,\n        export: exp,\n        importExport: importExport\n    }\n];\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 1280,
+    "y": 540,
+    "wires": [
+      [
+        "1cc83430.ad9ff4",
+        "ca3f354f.fe74d",
+        "d962fed.7287b"
+      ]
+    ]
+  },
+  {
+    "id": "ca3f354f.fe74d",
+    "type": "function",
+    "z": "e5288298.2221f",
+    "name": "",
+    "func": "msg.payload = msg.payload[0].load\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 1470,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "e0d398d8.70a83",
+    "type": "postgresql",
+    "z": "e5288298.2221f",
+    "name": "",
+    "query": "insert into solaredge (\"time\", grid, load, pv, import, export, importexport) values (NOW(), $1, $2, $3, $4, $5, $6);",
+    "postgreSQLConfig": "7de1657.d98a59c",
+    "split": false,
+    "rowsPerMsg": 1,
+    "outputs": 1,
+    "x": 1450,
+    "y": 840,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "d962fed.7287b",
+    "type": "function",
+    "z": "e5288298.2221f",
+    "name": "",
+    "func": "msg.params = [\n    msg.payload[0].grid,\n    msg.payload[0].load,\n    msg.payload[0].pv,\n    msg.payload[0].import,\n    msg.payload[0].export,\n    msg.payload[0].importExport\n    ]\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "x": 1260,
+    "y": 840,
+    "wires": [
+      [
+        "e0d398d8.70a83"
+      ]
+    ]
+  },
+  {
+    "id": "6173e3ca.1e18cc",
+    "type": "debug",
+    "z": "e5288298.2221f",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1100,
+    "y": 320,
+    "wires": []
+  },
+  {
+    "id": "7de1657.d98a59c",
+    "type": "postgreSQLConfig",
+    "z": "",
+    "name": "MyPostgresDatabase",
+    "host": "postgres_host",
+    "hostFieldType": "str",
+    "port": "postgres_port",
+    "portFieldType": "num",
+    "database": "postgres_dbname",
+    "databaseFieldType": "str",
+    "ssl": "false",
+    "sslFieldType": "bool",
+    "max": "20",
+    "maxFieldType": "num",
+    "min": "1",
+    "minFieldType": "num",
+    "idle": "10000",
+    "idleFieldType": "num",
+    "connectionTimeout": "100000",
+    "connectionTimeoutFieldType": "num",
+    "user": "postgres_user",
+    "userFieldType": "str",
+    "password": "postgres_password",
+    "passwordFieldType": "str"
+  }
+]
