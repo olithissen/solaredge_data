@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg13
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: SECRET_PASSWORD
+      TZ: Europe/Berlin
+    volumes:
+    - timescale_data:/var/lib/postgresql/data
+    ports:
+    - 5432:5432
+      
+volumes:
+  timescale_data:
